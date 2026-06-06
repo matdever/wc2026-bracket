@@ -1,0 +1,22 @@
+{
+  "type": "wc2026-pool",
+  "version": 1,
+  "resultsName": "Actual results",
+  "scoring": {
+    "qualify": 1,
+    "position": 1,
+    "bestThird": 2,
+    "exact": 3,
+    "result": 1,
+    "r16": 2,
+    "qf": 4,
+    "sf": 8,
+    "final": 16,
+    "champion": 32,
+    "finalists": 5,
+    "thirdPlace": 3
+  },
+  "profiles": [
+    { "name": "Actual results", "results": {} }
+  ]
+}
