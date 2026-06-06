@@ -6,7 +6,7 @@ FIFA tiebreakers, the "best third-placed teams" are worked out automatically, an
 bracket fills itself all the way to the Final. Includes per-player **profiles**, a per-match 🎲,
 and a configurable **scoring leaderboard** for running a pool.
 
-**Live site:** https://USERNAME.github.io/REPO/
+**Live site:** https://matdever.github.io/wc2026-bracket/
 
 ---
 
