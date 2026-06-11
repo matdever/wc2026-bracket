@@ -66,8 +66,11 @@ The point values you set travel inside `pool.json`, so everyone sees the same sc
 ## Good to know
 - **It's public.** Anyone with the link can see all predictions and names. Commit everyone's
   picks **after the deadline** so no one peeks early.
-- **Predictions are locked by you, not the app.** You decide what gets committed and when —
-  commit all entries before the first match (June 11, 2026).
+- **Predictions auto-lock at kick-off.** When the first match starts (Thu Jun 11, 2026,
+  4:00 PM ADT), the app turns every bracket read-only and makes all picks public to view
+  (open a name under **🔓 Everyone's picks**). Your **⭐ official-results** profile stays
+  editable so you can keep scoring. It's a client-side lock — the picks that truly count are
+  whatever you've committed to `pool.json`, so still commit everyone's entries before kick-off.
 - **Saving:** each browser keeps its own profiles in local storage. The shared standings come
   from `pool.json`.
 - The page reads `pool.json` only when **hosted** (opening the raw file from disk can't fetch it).
