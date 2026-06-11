@@ -53,7 +53,7 @@
 
   nav.tabs{position:sticky;top:0;z-index:20;background:rgba(12,18,32,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
   nav.tabs .inner{max-width:1280px;margin:0 auto;padding:0 16px}
-  .profiles{display:flex;align-items:center;gap:8px;min-height:46px;padding:7px 0 5px;overflow-x:auto;white-space:nowrap;border-bottom:1px solid #1a2746}
+  .profiles{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0 7px;border-bottom:1px solid #1a2746}
   .profiles::-webkit-scrollbar{height:6px}.profiles::-webkit-scrollbar-thumb{background:#2a3a60;border-radius:9px}
   .profiles .plabel{flex:0 0 auto;color:var(--dim);font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;margin-right:2px}
   .pchip{flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;background:#1b294c;border:1px solid var(--line);color:var(--ink);padding:6px 13px;border-radius:99px;font-size:13px;font-weight:600;cursor:pointer;transition:.15s}
@@ -168,7 +168,7 @@
   .bracket{display:flex;gap:18px;min-width:1100px;align-items:stretch}
   .col{display:flex;flex-direction:column;justify-content:space-around;gap:10px;flex:1;min-width:190px}
   .col.r32{min-width:210px}
-  .colhead{position:sticky;top:96px;text-align:center;font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--mut);padding:6px;background:#101a33;border:1px solid var(--line);border-radius:8px;margin-bottom:4px}
+  .colhead{position:sticky;top:var(--navh,96px);text-align:center;font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--mut);padding:6px;background:#101a33;border:1px solid var(--line);border-radius:8px;margin-bottom:4px}
   .km{background:var(--card);border:1px solid var(--line);border-radius:11px;overflow:hidden;transition:.15s}
   .km:hover{border-color:#3a5290}
   .km .meta{font-size:10px;color:var(--dim);padding:5px 9px;border-bottom:1px solid #1d2a49;display:flex;justify-content:space-between;gap:6px}
@@ -192,7 +192,7 @@
   .trophy .name .t{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
 
   /* ---------- Schedule ---------- */
-  .sched .day{margin:18px 0 8px;font-size:13px;font-weight:800;color:var(--ink);position:sticky;top:96px;background:rgba(12,18,32,.9);backdrop-filter:blur(6px);padding:6px 2px;border-bottom:1px solid var(--line);z-index:5}
+  .sched .day{margin:18px 0 8px;font-size:13px;font-weight:800;color:var(--ink);position:sticky;top:var(--navh,96px);background:rgba(12,18,32,.9);backdrop-filter:blur(6px);padding:6px 2px;border-bottom:1px solid var(--line);z-index:5}
   .srow{display:grid;grid-template-columns:120px 52px 1fr auto;gap:12px;align-items:center;padding:9px 10px;border:1px solid var(--line);border-radius:10px;margin-bottom:6px;background:var(--card);font-size:13px}
   .srow .time{color:var(--mut);font-weight:600;font-size:12px}
   .srow .badge{font-size:10px;font-weight:800;text-align:center;padding:3px 0;border-radius:6px;background:#23315a;color:var(--mut)}
@@ -241,17 +241,17 @@
   <div class="inner">
     <div class="profiles" id="profileBar"></div>
     <div class="tabrow">
-      <button class="tab active" data-view="groups">Group Stage</button>
-      <button class="tab" data-view="knockout">Knockout Bracket</button>
+      <button class="tab active" data-view="leaderboard">🏆 Leaderboard</button>
       <button class="tab" data-view="schedule">Full Schedule</button>
-      <button class="tab" data-view="leaderboard">🏆 Leaderboard</button>
+      <button class="tab tab-pick" data-view="groups">Group Stage</button>
+      <button class="tab tab-pick" data-view="knockout">Knockout Bracket</button>
     </div>
   </div>
 </nav>
 
 <div class="wrap">
   <div id="lockBanner"></div>
-  <section class="view active" id="view-groups">
+  <section class="view" id="view-groups">
     <div id="thirdPanel"></div>
     <div class="groupgrid" id="groupGrid"></div>
   </section>
@@ -270,7 +270,7 @@
     <div class="sched" id="sched"></div>
   </section>
 
-  <section class="view" id="view-leaderboard">
+  <section class="view active" id="view-leaderboard">
     <div id="leaderboard"></div>
   </section>
 </div>
@@ -353,14 +353,24 @@ function viewedObj(){
 }
 function viewIsResults(){ return VIEW.src==='local' && STATE.active===STATE.resultsId; }   // your official-results profile stays editable after lock
 function isReadOnly(){ if(VIEW.src==='pool') return true; if(locked() && !viewIsResults()) return true; return false; }
-function viewPool(name){ VIEW={src:'pool',name:name}; rerender(); }
-function viewLocal(){ VIEW={src:'local'}; rerender(); }
+function viewPool(name){ VIEW={src:'pool',name:name}; gotoProfileView(); rerender(); }
+function viewLocal(){ VIEW={src:'local'}; gotoProfileView(); rerender(); }
+/* ---- landing & tab visibility (Group Stage / Knockout appear once a profile is picked) ---- */
+let selected=false;
+function updatePickTabs(){ document.querySelectorAll('.tab-pick').forEach(t=>t.style.display=selected?'':'none'); }
+function activateTab(view){
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  const v=document.getElementById('view-'+view); if(v) v.classList.add('active');
+}
+function gotoProfileView(){ selected=true; updatePickTabs(); activateTab('groups'); }
+function syncNavHeight(){ const n=document.querySelector('nav.tabs'); if(n) document.documentElement.style.setProperty('--navh', n.offsetHeight+'px'); }
 function save(){ try{localStorage.setItem(KEY,JSON.stringify(STATE));}catch(e){} }
 function getR(n){ return RESULTS[n]||{}; }
 
 /* ---------------- profiles ---------------- */
-function switchProfile(id){ if(!STATE.profiles.some(p=>p.id===id))return; VIEW={src:'local'}; STATE.active=id; RESULTS=activeProfile().results; save(); renderProfiles(); rerender(); }
-function createProfile(name){ const p={id:uid(), name:(name||'').trim()||('Player '+(STATE.profiles.length+1)), results:{}}; STATE.profiles.push(p); STATE.active=p.id; RESULTS=p.results; save(); renderProfiles(); rerender(); }
+function switchProfile(id){ if(!STATE.profiles.some(p=>p.id===id))return; VIEW={src:'local'}; STATE.active=id; RESULTS=activeProfile().results; save(); gotoProfileView(); renderProfiles(); rerender(); }
+function createProfile(name){ const p={id:uid(), name:(name||'').trim()||('Player '+(STATE.profiles.length+1)), results:{}}; STATE.profiles.push(p); STATE.active=p.id; RESULTS=p.results; save(); gotoProfileView(); renderProfiles(); rerender(); }
 function renameProfile(id){ const p=STATE.profiles.find(x=>x.id===id); if(!p)return; const n=prompt('Rename profile:',p.name); if(n&&n.trim()){ p.name=n.trim(); save(); renderProfiles(); } }
 function deleteProfile(id){ if(STATE.profiles.length<=1){ alert('Keep at least one profile — create another before deleting this one.'); return; } const p=STATE.profiles.find(x=>x.id===id); if(!p)return; if(!confirm('Delete profile “'+p.name+'” and all its predictions?'))return; STATE.profiles=STATE.profiles.filter(x=>x.id!==id); if(STATE.active===id) STATE.active=STATE.profiles[0].id; RESULTS=activeProfile().results; save(); renderProfiles(); rerender(); }
 function uniqueName(base){ base=String(base||'').trim()||'Imported'; const names=new Set(STATE.profiles.map(p=>p.name)); let n=base,i=2; while(names.has(n)){ n=base+' '+i; i++; } return n; }
@@ -761,7 +771,7 @@ function rerender(){
   RESULTS=viewedObj().results;                       // show the profile currently being viewed
   const rb=document.getElementById('randomBtn'); if(rb) rb.style.display=locked()?'none':'';
   const rs=document.getElementById('resetBtn'); if(rs) rs.style.display=locked()?'none':'';
-  renderBanner(); renderProfiles();
+  renderBanner(); renderProfiles(); syncNavHeight();
   const active=document.activeElement;
   const k=(active&&active.dataset&&active.dataset.k)?active.dataset.k:null;
   renderGroups(); renderThirds(); renderBracket(); renderSchedule(); renderProgress(); renderLeaderboard();
@@ -798,12 +808,7 @@ document.addEventListener('click',e=>{
   const pb=e.target.closest&&e.target.closest('.penbtn');
   if(pb){ const [n,side]=pb.dataset.pen.split('-'); setPen(+n,side); rerender(); return; }
   const tab=e.target.closest&&e.target.closest('.tab');
-  if(tab){
-    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-    document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
-    tab.classList.add('active');
-    document.getElementById('view-'+tab.dataset.view).classList.add('active');
-  }
+  if(tab){ activateTab(tab.dataset.view); }
 });
 document.getElementById('resetBtn').onclick=()=>{ const p=activeProfile(); if(confirm('Clear all picks for profile “'+p.name+'”?')){ p.results={}; RESULTS=p.results; save(); rerender(); } };
 document.getElementById('exportBtn').onclick=()=>{
@@ -849,7 +854,10 @@ howDlg.addEventListener('click',e=>{ if(e.target===howDlg) howDlg.classList.remo
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') howDlg.classList.remove('open'); });
 
 renderProfiles();
+updatePickTabs();          // hide Group Stage / Knockout until a profile is picked
 rerender();
+syncNavHeight();
+window.addEventListener('resize', syncNavHeight);
 loadPool();   // if hosted with a pool.json alongside index.html, load the shared pool + leaderboard
 // auto-lock an open page the moment the first match kicks off
 (function(){ const d=DEADLINE_MS-Date.now(); if(d>0 && d<2147483000) setTimeout(()=>{ renderProfiles(); rerender(); }, d+800); })();
