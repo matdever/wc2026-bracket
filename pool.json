@@ -19,12 +19,7 @@
   "profiles": [
     {
       "name": "results",
-      "results": {
-        "1": {
-          "h": 2,
-          "a": 0
-        }
-      }
+      "results": {}
     },
     {
       "name": "Random picks",
