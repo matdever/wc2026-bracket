@@ -82,6 +82,7 @@
   .banner.lock{background:#2a1320;border-color:#7a2942;color:#ffd0db}
   .banner.view{background:#13243f;border-color:#3a5290;color:#cfe2ff;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
   .banner.soon{background:#16223f;color:var(--mut)}
+  .banner.join{background:#13322a;border-color:#2f6b54;color:#bdf0d6}
   .pchip.pool{background:#13243f;border-color:#2f436f;color:#cfe2ff}
   .pchip.pool:hover{background:#1b3358}
   .pchip.pool.active{background:#3a5290;color:#fff;border-color:#5a7cc0}
@@ -353,6 +354,14 @@ function viewedObj(){
 }
 function viewIsResults(){ return VIEW.src==='local' && STATE.active===STATE.resultsId; }   // your official-results profile stays editable after lock
 function isReadOnly(){ if(VIEW.src==='pool') return true; if(locked() && !viewIsResults()) return true; return false; }
+/* ---- late-entry ("join") mode: ?join in the URL lets a latecomer predict UPCOMING games;
+        games already kicked off are forced to 0-0 and locked. ---- */
+const JOIN = (function(){ try{ const q=new URLSearchParams(location.search); return q.has('join')||q.has('edit'); }catch(e){ return false; } })();
+function started(n){ const m=MATCH[n]; return !!m && Date.now() >= Date.parse(m.utc); }
+function canEdit(n){ if(VIEW.src==='pool') return false; return JOIN ? !started(n) : !isReadOnly(); }   // per-match editability
+function seedJoin(){ if(!JOIN) return; const r=activeProfile().results; let ch=false;
+  for(let n=1;n<=104;n++){ if(started(n) && r[String(n)]==null){ r[String(n)]={h:0,a:0}; ch=true; } }
+  if(ch) save(); }
 function viewPool(name){ VIEW={src:'pool',name:name}; gotoProfileView(); rerender(); }
 function viewLocal(){ VIEW={src:'local'}; gotoProfileView(); rerender(); }
 /* ---- landing & tab visibility (Group Stage / Knockout appear once a profile is picked) ---- */
@@ -387,7 +396,7 @@ function renderProfiles(){
        (highlight?' <span class="ic" data-act="results" data-pid="'+p.id+'" title="'+(isRes?'Unset official results':'Use as official results')+'">'+(isRes?'★':'☆')+'</span><span class="ic" data-act="rename" data-pid="'+p.id+'" title="Rename">✎</span><span class="ic" data-act="delete" data-pid="'+p.id+'" title="Delete">✕</span>':'')+
        '</button>';
   });
-  if(!locked()) h+='<button class="pchip add" id="addProfile">＋ New profile</button>';
+  if(!locked() || JOIN) h+='<button class="pchip add" id="addProfile">＋ New profile</button>';
   if(locked() && POOL && Array.isArray(POOL.profiles) && POOL.profiles.length){
     h+='<span class="plabel" style="margin-left:8px">🔓 Everyone’s picks</span>';
     POOL.profiles.forEach(p=>{
@@ -545,7 +554,7 @@ function roundName(r){ return ({GS:'Group',R32:'Round of 32',R16:'Round of 16',Q
 /* ---------------- renderers ---------------- */
 function scInput(n,side,val,disabled){
   return '<input class="sc" type="number" min="0" max="99" inputmode="numeric" data-k="'+n+'-'+side+'" '+
-         ((disabled||isReadOnly())?'disabled ':'')+'value="'+(val!=null?val:'')+'">';
+         ((disabled||!canEdit(n))?'disabled ':'')+'value="'+(val!=null?val:'')+'">';
 }
 
 function renderGroups(){
@@ -568,7 +577,7 @@ function renderGroups(){
       const hw=r.h!=null&&r.a!=null&&r.h>r.a, aw=r.h!=null&&r.a!=null&&r.a>r.h;
       if(idx===0||MATCH[GS_BY_GROUP[g][idx-1]].d!==m.d){} // (no per-day header inside group, keep compact)
       html+='<div class="fx">'+
-            '<div class="when">🗓 '+whenShort(m)+'<span class="vn">· '+esc(m.ci)+'</span>'+(isReadOnly()?'':'<button class="dice" data-rnd="'+n+'" title="Roll a random score for this game">🎲</button>')+'</div>'+
+            '<div class="when">🗓 '+whenShort(m)+'<span class="vn">· '+esc(m.ci)+'</span>'+(canEdit(n)?'<button class="dice" data-rnd="'+n+'" title="Roll a random score for this game">🎲</button>':'')+'</div>'+
             '<div class="home '+(hw?'twin':'')+'">'+esc(m.ho)+'<span class="flag">'+(FLAGS[m.ho]||'')+'</span></div>'+
             '<div class="score">'+scInput(n,'h',r.h,false)+'<span class="vs">–</span>'+scInput(n,'a',r.a,false)+'</div>'+
             '<div class="away '+(aw?'twin':'')+'"><span class="flag">'+(FLAGS[m.aw]||'')+'</span>'+esc(m.aw)+'</div>'+
@@ -616,7 +625,7 @@ function kmCard(n,opts){
   h+='<div class="krow'+(advH?' adv':'')+'"><span class="nm'+(hT?'':' tbd')+'">'+(hT?fteam(hT):esc(home.label))+'</span>'+scInput(n,'h',r.h,!both)+'</div>';
   h+='<div class="krow'+(advA?' adv':'')+'"><span class="nm'+(aT?'':' tbd')+'">'+(aT?fteam(aT):esc(away.label))+'</span>'+scInput(n,'a',r.a,!both)+'</div>';
   if(tied){
-    if(isReadOnly()){
+    if(!canEdit(n)){
       const pw=r.pen==='h'?hT:(r.pen==='a'?aT:null);
       h+='<div class="pens">⚽ Penalties → '+(pw?esc(pw):'<span class="muted">undecided</span>')+'</div>';
     } else {
@@ -624,7 +633,7 @@ function kmCard(n,opts){
          '<button class="penbtn'+(r.pen==='a'?' sel':'')+'" data-pen="'+n+'-a">'+esc(aT)+'</button></div>';
     }
   }
-  h+='<div class="meta" style="border-top:1px solid #1d2a49;border-bottom:none"><span>📍 '+esc(m.ci)+'</span>'+(isReadOnly()?'':'<button class="dice" data-rnd="'+n+'" '+(both?'':'disabled')+' title="Roll a random score for this game">🎲</button>')+'</div>';
+  h+='<div class="meta" style="border-top:1px solid #1d2a49;border-bottom:none"><span>📍 '+esc(m.ci)+'</span>'+(canEdit(n)?'<button class="dice" data-rnd="'+n+'" '+(both?'':'disabled')+' title="Roll a random score for this game">🎲</button>':'')+'</div>';
   h+='</div>';
   return h;
 }
@@ -759,6 +768,9 @@ function renderBanner(){
   if(VIEW.src==='pool'){
     el.className='banner view';
     el.innerHTML='👁 Viewing <b>'+esc(VIEW.name)+'</b>’s picks — read-only. <button class="btn" id="backLocal" style="padding:4px 10px">← Back to your bracket</button>';
+  } else if(JOIN){
+    el.className='banner join';
+    el.innerHTML='🆕 <b>Late-entry mode.</b> Games already kicked off are set to <b>0–0</b> and locked. Pick or create your name above, predict the <b>upcoming</b> games, then <b>⬇ Export</b> and send the file to the host.';
   } else if(locked()){
     el.className='banner lock';
     el.innerHTML='🔒 Predictions are <b>locked</b> — the tournament has kicked off ('+when+'). All brackets are read-only and everyone’s picks are now public: open a name under <b>🔓 Everyone’s picks</b> above to view. (Your ⭐ official-results profile stays editable so you can keep scoring.)';
@@ -769,8 +781,9 @@ function renderBanner(){
 }
 function rerender(){
   RESULTS=viewedObj().results;                       // show the profile currently being viewed
-  const rb=document.getElementById('randomBtn'); if(rb) rb.style.display=locked()?'none':'';
-  const rs=document.getElementById('resetBtn'); if(rs) rs.style.display=locked()?'none':'';
+  if(JOIN) seedJoin();                               // force 0-0 on already-kicked-off games for late entries
+  const rb=document.getElementById('randomBtn'); if(rb) rb.style.display=(locked()&&!JOIN)?'none':'';
+  const rs=document.getElementById('resetBtn'); if(rs) rs.style.display=(locked()&&!JOIN)?'none':'';
   renderBanner(); renderProfiles(); syncNavHeight();
   const active=document.activeElement;
   const k=(active&&active.dataset&&active.dataset.k)?active.dataset.k:null;
@@ -782,8 +795,8 @@ function rerender(){
 document.addEventListener('input',e=>{
   const t=e.target;
   if(t.classList&&t.classList.contains('sc')){
-    if(isReadOnly()) return;
     const [n,side]=t.dataset.k.split('-');
+    if(!canEdit(+n)) return;
     setScore(+n,side,t.value);
     rerender();
   } else if(t.classList&&t.classList.contains('spt')){
@@ -835,11 +848,11 @@ document.getElementById('importFile').onchange=e=>{
 };
 /* ---------------- random fill ---------------- */
 function rnd4(){ return Math.floor(Math.random()*4); }   // 0,1,2,3 goals, each team independent
-function randomMatch(n){ if(isReadOnly()) return; const h=rnd4(),a=rnd4(),rec={h:h,a:a}; if(n>=73&&h===a) rec.pen=Math.random()<0.5?'h':'a'; RESULTS[n]=rec; save(); rerender(); }
-function randomFill(overwrite){ if(locked()) return;
-  for(let n=1;n<=72;n++){ if(!overwrite){ const r=getR(n); if(r.h!=null&&r.a!=null) continue; } RESULTS[n]={h:rnd4(),a:rnd4()}; }
+function randomMatch(n){ if(!canEdit(n)) return; const h=rnd4(),a=rnd4(),rec={h:h,a:a}; if(n>=73&&h===a) rec.pen=Math.random()<0.5?'h':'a'; RESULTS[n]=rec; save(); rerender(); }
+function randomFill(overwrite){ if(locked() && !JOIN) return;
+  for(let n=1;n<=72;n++){ if(!canEdit(n)) continue; if(!overwrite){ const r=getR(n); if(r.h!=null&&r.a!=null) continue; } RESULTS[n]={h:rnd4(),a:rnd4()}; }
   // ascending order: every feeder match has a lower number, so winners resolve before dependents
-  for(let n=73;n<=104;n++){ if(!overwrite){ const r=getR(n); if(r.h!=null&&r.a!=null) continue; } const h=rnd4(),a=rnd4(),rec={h:h,a:a}; if(h===a) rec.pen=Math.random()<0.5?'h':'a'; RESULTS[n]=rec; }
+  for(let n=73;n<=104;n++){ if(!canEdit(n)) continue; if(!overwrite){ const r=getR(n); if(r.h!=null&&r.a!=null) continue; } const h=rnd4(),a=rnd4(),rec={h:h,a:a}; if(h===a) rec.pen=Math.random()<0.5?'h':'a'; RESULTS[n]=rec; }
   save(); rerender();
 }
 document.getElementById('randomBtn').onclick=()=>{
