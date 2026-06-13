@@ -523,7 +523,8 @@ function reachedTeams(res){
     return {q:qualifiersOf(), r16:setOf(73,88), qf:setOf(89,96), sf:setOf(97,100), final:setOf(101,102), champ:winner(104)};
   });
 }
-function scoreProfile(playerRes,actualRes){
+function scoreProfile(playerRes,actualRes,voidSet){
+  voidSet=voidSet||new Set();   // group games already played before a late entry joined → not scored
   const S=getScoring(), A=reachedTeams(actualRes), P=reachedTeams(playerRes);
   let groupPts=0, scoreBonus=0, koPts=0, bonusPts=0;
   Object.keys(TEAM_GROUP).forEach(t=>{
@@ -532,7 +533,7 @@ function scoreProfile(playerRes,actualRes){
     if(aPos!=null&&pPos!=null){ if(aQual&&pQual) groupPts+=S.qualify; if(aPos===pPos) groupPts+=S.position; }
     if(A.q.adv.has(t)&&P.q.adv.has(t)) groupPts+=S.bestThird;
   });
-  for(let n=1;n<=72;n++){ const a=actualRes[n], p=playerRes[n];
+  for(let n=1;n<=72;n++){ if(voidSet.has(n)) continue; const a=actualRes[n], p=playerRes[n];
     if(!a||a.h==null||a.a==null||!p||p.h==null||p.a==null) continue;
     if(p.h===a.h&&p.a===a.a) scoreBonus+=S.exact;
     else if(Math.sign(p.h-p.a)===Math.sign(a.h-a.a)) scoreBonus+=S.result; }
@@ -706,8 +707,8 @@ function ptsPanelHTML(S){
 let POOL=null;   // shared pool loaded from pool.json (when hosted)
 function mergedProfiles(){
   const m=new Map();
-  if(POOL&&Array.isArray(POOL.profiles)) POOL.profiles.forEach(p=>{ if(p&&p.name) m.set(p.name,{name:p.name,results:p.results||{},src:'pool'}); });
-  STATE.profiles.forEach(p=> m.set(p.name,{name:p.name,results:p.results||{},src:'local'}));  // local overrides same-name pool entry
+  if(POOL&&Array.isArray(POOL.profiles)) POOL.profiles.forEach(p=>{ if(p&&p.name) m.set(p.name,{name:p.name,results:p.results||{},void:p.void||[],src:'pool'}); });
+  STATE.profiles.forEach(p=> m.set(p.name,{name:p.name,results:p.results||{},void:p.void||[],src:'local'}));  // local overrides same-name pool entry
   return [...m.values()];
 }
 function resultsProfileObj(merged){
@@ -746,7 +747,7 @@ function renderLeaderboard(){
     return;
   }
   const players=merged.filter(p=>p!==resObj && (p.src!=='local' || Object.keys(p.results||{}).length>0));
-  const rows=players.map(p=>Object.assign({name:p.name,src:p.src}, scoreProfile(p.results,resObj.results))).sort((a,b)=>b.total-a.total);
+  const rows=players.map(p=>Object.assign({name:p.name,src:p.src}, scoreProfile(p.results,resObj.results,new Set((p.void||[]).map(Number))))).sort((a,b)=>b.total-a.total);
   let actualGames=0; for(let n=1;n<=104;n++){ const r=resObj.results[n]; if(r&&r.h!=null&&r.a!=null) actualGames++; }
   let h='<div class="panel"><h3>🏆 Leaderboard <span class="tag '+(actualGames?'fin':'prov')+'">vs ⭐ '+esc(resObj.name)+' · '+actualGames+'/104 results in</span></h3>';
   h+=poolBar();
