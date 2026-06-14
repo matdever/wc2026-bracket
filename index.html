@@ -231,6 +231,7 @@
       <button class="btn ghost" id="howto">❔ How it works</button>
       <button class="btn" id="exportBtn" title="Download the active profile’s predictions">⬇ Export</button>
       <button class="btn" id="importBtn" title="Load a predictions file as a new profile">⬆ Import</button>
+      <button class="btn" id="updateBtn" title="Force a results refresh now — opens GitHub Actions; click the green ‘Run workflow’ button there">🔄 Update results</button>
       <button class="btn" id="randomBtn" title="Fill every still-empty game with a random score (0–3 goals each)">🎲 Random all</button>
       <button class="btn danger" id="resetBtn">↺ Reset</button>
       <input type="file" id="importFile" accept="application/json" style="display:none">
@@ -824,6 +825,7 @@ document.addEventListener('click',e=>{
   const tab=e.target.closest&&e.target.closest('.tab');
   if(tab){ activateTab(tab.dataset.view); }
 });
+document.getElementById('updateBtn').onclick=()=>window.open('https://github.com/matdever/wc2026-bracket/actions/workflows/update-scores.yml','_blank','noopener');
 document.getElementById('resetBtn').onclick=()=>{ const p=activeProfile(); if(confirm('Clear all picks for profile “'+p.name+'”?')){ p.results={}; RESULTS=p.results; save(); rerender(); } };
 document.getElementById('exportBtn').onclick=()=>{
   const p=activeProfile();
