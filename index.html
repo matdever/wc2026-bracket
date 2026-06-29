@@ -144,7 +144,8 @@
   .panel > h3 .tag{margin-left:auto;font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px}
   .tag.prov{background:var(--amberbg);color:var(--amber)}
   .tag.fin{background:var(--greenbg);color:var(--green)}
-  .third-wrap{padding:6px 8px 12px}
+  .third-wrap{padding:6px 8px 12px;overflow-x:auto}
+  table.lb td.pts,table.lb th:nth-child(3){border-right:1px solid #243355}
   table.third{width:100%;border-collapse:collapse;font-size:13px}
   table.third th{color:var(--dim);font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;padding:8px 6px;text-align:center}
   table.third th.tn{text-align:left}
@@ -757,8 +758,8 @@ function renderLeaderboard(){
   if(!players.length){
     h+='<div class="explain" style="padding:18px">No player entries yet — create profiles or <b>Import</b> friends’ exported files (then <b>Publish pool</b> to share them).</div>';
   } else {
-    h+='<div class="third-wrap"><table class="third lb"><thead><tr><th>#</th><th class="tn">Player</th><th>Group</th><th>Scores</th><th>Knockout</th><th>Bonus</th><th>Total</th></tr></thead><tbody>';
-    rows.forEach((r,i)=>{ const crown=(i===0&&r.total>0); h+='<tr'+(crown?' class="qual"':'')+'><td>'+(i+1)+(crown?' 👑':'')+'</td><td class="tn">'+esc(r.name)+((r.src==='local'&&POOL)?' <span class="srctag">local</span>':'')+'</td><td>'+r.groupPts+'</td><td>'+r.scoreBonus+'</td><td>'+r.koPts+'</td><td>'+r.bonusPts+'</td><td class="pts">'+r.total+'</td></tr>'; });
+    h+='<div class="third-wrap"><table class="third lb"><thead><tr><th>#</th><th class="tn">Player</th><th>Total</th><th>Group</th><th>Scores</th><th>Knockout</th><th>Bonus</th></tr></thead><tbody>';
+    rows.forEach((r,i)=>{ const crown=(i===0&&r.total>0); h+='<tr'+(crown?' class="qual"':'')+'><td>'+(i+1)+(crown?' 👑':'')+'</td><td class="tn">'+esc(r.name)+((r.src==='local'&&POOL)?' <span class="srctag">local</span>':'')+'</td><td class="pts">'+r.total+'</td><td>'+r.groupPts+'</td><td>'+r.scoreBonus+'</td><td>'+r.koPts+'</td><td>'+r.bonusPts+'</td></tr>'; });
     h+='</tbody></table></div>';
   }
   h+='<div class="explain">'+scoringSummary(S)+'</div></div>';
